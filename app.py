@@ -51,18 +51,6 @@ class GmailSender(AbstractEmailSender):
             f"Send an email to {user} with the following MIME message: {body}"
         )
 
-    def _create_mime_message(self, user: str, subject: str, body: str) -> MIMEMultipart:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = "your_email@example.com"
-        msg["To"] = user
-
-        # Here we are only attaching plain text without any encoding or HTML
-        part1 = MIMEText(body, "plain")
-        msg.attach(part1)
-
-        return msg
-
 
 # Main processing class that fetches, formats, and sends the email
 class EmailProcessor:
