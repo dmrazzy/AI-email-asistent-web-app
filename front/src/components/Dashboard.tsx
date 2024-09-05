@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from "./Button"
 import { Input } from './Input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './Dialog'
@@ -23,6 +23,8 @@ export default function Dashboard() {
   const [aiResponse, setAiResponse] = useState("")
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('inbox')
+  const [emailContent, setEmailContent] = useState("")
+  const [emailSummary, setEmailSummary] = useState("")
 
   const emails = [
     { id: 1, from: "john@example.com", subject: "Meeting tomorrow", preview: "Hi, just a reminder about our...", unread: true },
@@ -34,6 +36,67 @@ export default function Dashboard() {
     setSelectedEmail(email)
     setAiResponse(`Dear ${email.from.split('@')[0]},\n\nThank you for your email. I have reviewed your message and...`)
   }
+
+  const fetchEmail = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/fetch-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setEmailContent(data.content);
+      } else {
+        console.error('Failed to fetch email');
+      }
+    } catch (error) {
+      console.error('Error fetching email:', error);
+    }
+  };
+
+  const summarizeEmail = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/summarize-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ content: emailContent })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setEmailSummary(data.summary);
+      } else {
+        console.error('Failed to summarize email');
+      }
+    } catch (error) {
+      console.error('Error summarizing email:', error);
+    }
+  };
+
+  const sendEmail = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ summary: emailSummary })
+      });
+      if (response.ok) {
+        console.log('Email sent successfully');
+      } else {
+        console.error('Failed to send email');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -95,11 +158,29 @@ export default function Dashboard() {
           <div className="bg-yellow-100 p-6 rounded-lg border border-yellow-200">
             <h3 className="font-bold mb-2">AI Generated Response:</h3>
             <p className="whitespace-pre-wrap mb-4">{aiResponse}</p>
+            <Button className="mt-2 mr-2" onClick={fetchEmail}>
+              Fetch Email
+            </Button>
+            <Button className="mt-2 mr-2" onClick={summarizeEmail}>
+              Summarize Email
+            </Button>
             <Button className="mt-2" onClick={() => setIsEditModalOpen(true)}>
               <Edit2 className="h-4 w-4 mr-2" />
               Edit and Send
             </Button>
           </div>
+          {emailContent && (
+            <div className="mt-4">
+              <h3 className="font-bold mb-2">Fetched Email Content:</h3>
+              <p className="whitespace-pre-wrap">{emailContent}</p>
+            </div>
+          )}
+          {emailSummary && (
+            <div className="mt-4">
+              <h3 className="font-bold mb-2">Email Summary:</h3>
+              <p className="whitespace-pre-wrap">{emailSummary}</p>
+            </div>
+          )}
         </div>
       ) : (
         <div className="w-1/2 bg-white p-6 flex items-center justify-center text-gray-500">
@@ -114,8 +195,8 @@ export default function Dashboard() {
             <DialogTitle>Edit and Send Response</DialogTitle>
           </DialogHeader>
           <Textarea
-            value={aiResponse}
-            onChange={(e) => setAiResponse(e.target.value)}
+            value={emailSummary}
+            onChange={(e) => setEmailSummary(e.target.value)}
             rows={10}
             className="mt-2"
           />
@@ -124,9 +205,8 @@ export default function Dashboard() {
               Cancel
             </Button>
             <Button onClick={() => {
-              // Here you would typically send the email
-              console.log("Sending email:", aiResponse)
-              setIsEditModalOpen(false)
+              sendEmail();
+              setIsEditModalOpen(false);
             }}>
               Send
             </Button>

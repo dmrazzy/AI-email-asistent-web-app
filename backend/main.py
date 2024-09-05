@@ -8,7 +8,13 @@ from pydantic import BaseModel, EmailStr
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
+
+from abc import ABC, abstractmethod
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from composio_phidata import Action, ComposioToolSet
+from phi.assistant import Assistant
 
 # Database setup
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -49,6 +55,14 @@ class Token(BaseModel):
 class LoginData(BaseModel):
     email: EmailStr
     password: str
+
+
+class EmailContent(BaseModel):
+    content: str
+
+
+class EmailSummary(BaseModel):
+    summary: str
 
 
 # Password hashing
@@ -174,6 +188,77 @@ def get_current_user(
 @app.get("/users/me", response_model=UserInDB)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@app.post("/fetch-email", response_model=EmailContent)
+async def fetch_email(current_user: User = Depends(get_current_user)):
+    fetcher = GmailFetcher()
+    email_content = fetcher.fetch_email()
+    return EmailContent(content=email_content)
+
+
+@app.post("/summarize-email", response_model=EmailSummary)
+async def summarize_email(
+    email_content: EmailContent, current_user: User = Depends(get_current_user)
+):
+    formatter = EmailFormatter()
+    summary = formatter.format_response_as_plain_text(email_content.content)
+    return EmailSummary(summary=summary)
+
+
+@app.post("/send-email")
+async def send_email(
+    email_summary: EmailSummary, current_user: User = Depends(get_current_user)
+):
+    sender = GmailSender()
+    sender.send_email(
+        "petarvukovic50@gmail.com", "Email Summary", email_summary.summary
+    )
+    return {"message": "Email sent successfully"}
+
+
+# Email processing classes
+
+
+class AbstractEmailFetcher(ABC):
+    @abstractmethod
+    def fetch_email(self) -> str:
+        pass
+
+
+class GmailFetcher(AbstractEmailFetcher):
+    def fetch_email(self) -> str:
+        toolset = ComposioToolSet()
+        read_email = toolset.get_actions(actions=[Action.GMAIL_FETCH_EMAILS])
+        assistant = Assistant(tools=read_email, show_tool_calls=True, use_tools=True)
+        response = assistant.run(
+            """Fetch me the last email from lorens.novosel@49218069.mailchimpapp.com. Based on that email, make a summary.
+            The summary must be in Croatian. Ensure that the summary is divided into sections. That summary I will pass as the body to another email, keep that in mind.""",
+            stream=False,
+        )
+        return response
+
+
+class EmailFormatter:
+    def format_response_as_plain_text(self, response: str) -> str:
+        plain_text_body = f"Sažetak emaila:\n\n{response}\n\nOvo je automatski generiran email sa sažetkom zadnje poruke."
+        return plain_text_body
+
+
+class AbstractEmailSender(ABC):
+    @abstractmethod
+    def send_email(self, user: str, subject: str, body: str):
+        pass
+
+
+class GmailSender(AbstractEmailSender):
+    def send_email(self, user: str, subject: str, body: str):
+        toolset = ComposioToolSet()
+        send_email = toolset.get_actions(actions=[Action.GMAIL_SEND_EMAIL])
+        assistant = Assistant(tools=send_email, show_tool_calls=True, use_tools=True)
+        assistant.print_response(
+            f"Send an email to {user} with the following MIME message: {body}"
+        )
 
 
 if __name__ == "__main__":
