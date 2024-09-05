@@ -4,8 +4,22 @@ import { Input } from './Input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './Dialog'
 import { Inbox, Send, Archive, Trash2, RefreshCcw, Search, Edit2 } from 'lucide-react'
 
+// Textarea component
+const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  ({ className, ...props }, ref) => {
+    return (
+      <textarea
+        className={`flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Textarea.displayName = "Textarea"
+
 export default function Dashboard() {
-  const [selectedEmail, setSelectedEmail] = useState(null)
+  const [selectedEmail, setSelectedEmail] = useState<{ id: number, from: string, subject: string, preview: string } | null>(null)
   const [aiResponse, setAiResponse] = useState("")
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
@@ -15,10 +29,10 @@ export default function Dashboard() {
     { id: 3, from: "mike@example.com", subject: "Quick question", preview: "I was wondering if you could...", unread: true },
   ]
 
-  const handleEmailSelect = (email) => {
+  const handleEmailSelect = (email: { id: number, from: string, subject: string, preview: string }) => {
     setSelectedEmail(email)
     // Simulate AI generating a response
-    setAiResponse("Dear " + email.from.split('@')[0] + ",\n\nThank you for your email. I have reviewed your message and...")
+    setAiResponse(`Dear ${email.from.split('@')[0]},\n\nThank you for your email. I have reviewed your message and...`)
   }
 
   return (
@@ -26,19 +40,19 @@ export default function Dashboard() {
       {/* Sidebar */}
       <div className="w-64 bg-white p-4 space-y-4">
         <Button className="w-full justify-start space-x-2">
-          <Inbox size={20} />
+          <Inbox className="h-5 w-5" />
           <span>Inbox</span>
         </Button>
-        <Button variant="ghost" className="w-full justify-start space-x-2">
-          <Send size={20} />
+        <Button variant="secondary" className="w-full justify-start space-x-2">
+          <Send className="h-5 w-5" />
           <span>Sent</span>
         </Button>
-        <Button variant="ghost" className="w-full justify-start space-x-2">
-          <Archive size={20} />
+        <Button variant="secondary" className="w-full justify-start space-x-2">
+          <Archive className="h-5 w-5" />
           <span>Archive</span>
         </Button>
-        <Button variant="ghost" className="w-full justify-start space-x-2">
-          <Trash2 size={20} />
+        <Button variant="secondary" className="w-full justify-start space-x-2">
+          <Trash2 className="h-5 w-5" />
           <span>Trash</span>
         </Button>
       </div>
@@ -48,10 +62,10 @@ export default function Dashboard() {
         <div className="bg-white p-4 flex items-center space-x-4">
           <Input placeholder="Search emails..." className="flex-1" />
           <Button size="icon">
-            <Search size={20} />
+            <Search className="h-4 w-4" />
           </Button>
           <Button size="icon">
-            <RefreshCcw size={20} />
+            <RefreshCcw className="h-4 w-4" />
           </Button>
         </div>
         <div className="flex-1 overflow-auto">
@@ -82,7 +96,7 @@ export default function Dashboard() {
             <h3 className="font-bold mb-2">AI Generated Response:</h3>
             <p className="whitespace-pre-wrap">{aiResponse}</p>
             <Button className="mt-4" onClick={() => setIsEditModalOpen(true)}>
-              <Edit2 size={20} className="mr-2" />
+              <Edit2 className="h-4 w-4 mr-2" />
               Edit and Send
             </Button>
           </div>
@@ -99,9 +113,10 @@ export default function Dashboard() {
             value={aiResponse}
             onChange={(e) => setAiResponse(e.target.value)}
             rows={10}
+            className="mt-2"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+            <Button variant="secondary" onClick={() => setIsEditModalOpen(false)}>
               Cancel
             </Button>
             <Button onClick={() => {

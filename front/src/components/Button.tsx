@@ -10,6 +10,7 @@ export const Button: React.FC<ButtonProps> = ({
     variant = 'primary',
     size = 'medium',
     className,
+    type = 'button',
     ...props
 }) => {
     const baseStyles = 'font-semibold rounded-md transition-colors';
@@ -26,7 +27,7 @@ export const Button: React.FC<ButtonProps> = ({
     const buttonClasses = `${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className || ''}`;
 
     return (
-        <button className={buttonClasses} {...props}>
+        <button type={type} className={buttonClasses} {...props}>
             {children}
         </button>
     );

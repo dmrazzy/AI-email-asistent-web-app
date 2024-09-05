@@ -11,11 +11,12 @@ export default function Layout() {
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
 
-  const handleLogin = () => {
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
     if (username === 'test' && password === 'test') {
       setIsLoggedIn(true)
       setIsLoginModalOpen(false)
-      navigate('/email-automation')
+      navigate('/dashboard')
     } else {
       alert('Invalid credentials')
     }
@@ -43,8 +44,8 @@ export default function Layout() {
                   Pricing
                 </Link>
                 {isLoggedIn && (
-                  <Link to="/email-automation" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                    Email Automation
+                  <Link to="/dashboard" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Dashboard
                   </Link>
                 )}
               </div>
@@ -69,20 +70,24 @@ export default function Layout() {
           <DialogHeader>
             <DialogTitle>Login</DialogTitle>
           </DialogHeader>
-          <Input
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <DialogFooter>
-            <Button onClick={handleLogin}>Login</Button>
-          </DialogFooter>
+          <form onSubmit={handleLogin}>
+            <Input
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+            />
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+            <DialogFooter>
+              <Button type="submit">Login</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
